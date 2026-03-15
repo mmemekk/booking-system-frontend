@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Thai, Prompt } from "next/font/google";
+import { Noto_Sans_Thai, Open_Sans, Prompt } from "next/font/google";
 import "./globals.css";
 import SideMenu from "./side-menu";
 
 const notoSansThai = Noto_Sans_Thai({
   variable: "--font-noto-sans-thai",
-  subsets: ["latin"],
 });
 
 const prompt = Prompt({
   variable: "--font-prompt",
   weight: "400",
 });
+
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -26,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${notoSansThai.variable} ${prompt.variable} antialiased`}
+        className={`${notoSansThai.variable} ${prompt.variable}`}
       >
         <SideMenu>
           {children}

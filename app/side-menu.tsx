@@ -6,6 +6,13 @@ export default function SideMenu({
 }) {
 
   return (
-    <h1> Side bar</h1>
+    <div>
+      <h1 className="font-noto"> Side bar</h1>
+      <h1 className="font-open"> Side bar</h1>
+      <h1 className="font-prompt"> Side bar</h1>
+      {children}
+    </div>
+
+
   );
 }
