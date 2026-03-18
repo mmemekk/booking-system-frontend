@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Utensils, LayoutDashboard, Calendar, CheckSquare, Table2, Settings, HelpCircle } from "lucide-react"
+import { Utensils, LayoutDashboard, CalendarDays, CalendarCheck, UtensilsCrossed, Settings, HelpCircle } from "lucide-react"
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -16,17 +16,17 @@ export default function Sidebar() {
     {
       name: "Bookings",
       href: "/bookings",
-      icon: Calendar,
+      icon: CalendarDays,
     },
     {
       name: "Availabilities",
       href: "/availabilities",
-      icon: CheckSquare,
+      icon: CalendarCheck,
     },
     {
       name: "Tables",
       href: "/tables",
-      icon: Table2,
+      icon: UtensilsCrossed,
     },
   ]
 
@@ -44,7 +44,7 @@ export default function Sidebar() {
   ]
 
   return (
-    <aside className="w-64 h-screen border-r border-border bg-white flex flex-col justify-between p-4">
+    <aside className="fixed flex flex-col left-0 w-64 h-screen border-r border-border bg-white justify-between p-4 z-10">
       
       {/* TOP SECTION */}
       <div>
@@ -71,7 +71,7 @@ export default function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition
                   
                   ${
                     isActive
