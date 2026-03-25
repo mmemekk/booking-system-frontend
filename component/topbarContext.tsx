@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, ReactNode } from "react"
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from "react"
 
 type TopBarContextType = {
   title: string
@@ -14,13 +14,24 @@ export function TopBarProvider({ children }: { children: ReactNode }) {
   const [title, setTitle] = useState('')
   const [rightContent, setRightContent] = useState<React.ReactNode>(undefined)
 
-  const setTopBar = (newTitle: string, newRightContent?: React.ReactNode) => {
+  // Stabilize function identity to avoid triggering effects that depend on `setTopBar`
+  // (prevents React "Maximum update depth exceeded" loops).
+  const setTopBar = useCallback((newTitle: string, newRightContent?: React.ReactNode) => {
     setTitle(newTitle)
     setRightContent(newRightContent)
-  }
+  }, [])
+
+  const value = useMemo(
+    () => ({
+      title,
+      rightContent,
+      setTopBar,
+    }),
+    [title, rightContent, setTopBar],
+  )
 
   return (
-    <TopBarContext.Provider value={{ title, rightContent, setTopBar }}>
+    <TopBarContext.Provider value={value}>
       {children}
     </TopBarContext.Provider>
   )

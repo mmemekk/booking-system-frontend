@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Utensils, LayoutDashboard, CalendarDays, CalendarCheck, UtensilsCrossed, Settings, HelpCircle } from "lucide-react"
+import { Utensils, LayoutDashboard, CalendarDays, CalendarCheck, Settings, HelpCircle } from "lucide-react"
+import {TableRestaurantOutlined} from "@mui/icons-material";
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -26,19 +27,19 @@ export default function Sidebar() {
     {
       name: "Tables",
       href: "/tables",
-      icon: UtensilsCrossed,
+      icon: TableRestaurantOutlined,
     },
   ]
 
   const bottomItems = [
     {
       name: "Settings",
-      href: "/dashboard/settings",
+      href: "/settings",
       icon: Settings,
     },
     {
       name: "Help",
-      href: "/dashboard/help",
+      href: "/help",
       icon: HelpCircle,
     },
   ]
