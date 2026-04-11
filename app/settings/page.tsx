@@ -59,8 +59,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="flex-grow p-8 bg-gray-50">
-      <div className="mx-auto max-w-4xl space-y-8">
+    <div className="flex flex-col p-8 gap-6">
 
         {/* =========================
             RESTAURANT DETAILS
@@ -290,7 +289,6 @@ export default function Settings() {
           </div>
         </div>
 
-      </div>
     </div>
   );
 }
