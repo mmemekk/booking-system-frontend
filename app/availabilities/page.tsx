@@ -18,6 +18,13 @@ interface TableInfo {
   capacity: number;
 }
 
+interface TableAvailability {
+  id: number;
+  name: string;
+  capacity: number;
+  chunks: { open: number; close: number }[];
+}
+
 interface Availability {
   available: number;
   total: number;
@@ -45,7 +52,10 @@ export default function Availabilities() {
   const [isLoading, setIsLoading] = useState(true);
 
   // --- NEW: State for Side Panel ---
-  const [selectedSlot, setSelectedSlot] = useState<{ date: string; time: string } | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<{
+    date: string;
+    time: string;
+  } | null>(null);
 
   // Dynamic Height Tracking
   const containerRef = useRef<HTMLDivElement>(null);
@@ -65,10 +75,13 @@ export default function Availabilities() {
     setTopBar(
       "Availabilities",
       <div className="flex gap-4 items-center">
-        <WeekSelector selectedDate={currentDate} onChange={(newDate) => {
-          setCurrentDate(newDate);
-          setSelectedSlot(null); // Close panel on week change
-        }} />
+        <WeekSelector
+          selectedDate={currentDate}
+          onChange={(newDate) => {
+            setCurrentDate(newDate);
+            setSelectedSlot(null); // Close panel on week change
+          }}
+        />
 
         {/* Quick jump to current week */}
         <button
@@ -200,19 +213,21 @@ export default function Availabilities() {
             availResults[i]?.formattedGetEffectiveTableAvailability || [];
 
           // Create an array of free minutes for every single table.
-          const tableAvailabilities = availData.map((table: any) => {
-            const chunks = table.availabilities || [];
-            return {
-              id: table.id,
-              name: table.name,
-              capacity: table.capacity,
-              chunks: chunks.map((c: any) => ({
-                // Handled gracefully in case API returns 'from'/'to' OR 'openTime'/'closeTime'
-                open: parseTimeToMinutes(c.openTime || c.from),
-                close: parseTimeToMinutes(c.closeTime || c.to),
-              })),
-            };
-          });
+          const tableAvailabilities: TableAvailability[] = availData.map(
+            (table: any) => {
+              const chunks = table.availabilities || [];
+              return {
+                id: table.id,
+                name: table.name,
+                capacity: table.capacity,
+                chunks: chunks.map((c: any) => ({
+                  // Handled gracefully in case API returns 'from'/'to' OR 'openTime'/'closeTime'
+                  open: parseTimeToMinutes(c.openTime || c.from),
+                  close: parseTimeToMinutes(c.closeTime || c.to),
+                })),
+              };
+            },
+          );
 
           // Loop through every possible slot
           for (
@@ -235,9 +250,9 @@ export default function Availabilities() {
 
             if (isOpenTime) {
               // Extract EXACT tables free for this entire chunk
-              tableAvailabilities.forEach((t) => {
+              tableAvailabilities.forEach((t: TableAvailability) => {
                 const isTableFree = t.chunks.some(
-                  (c: any) => slotStart >= c.open && slotEnd <= c.close,
+                  (c) => slotStart >= c.open && slotEnd <= c.close,
                 );
                 if (isTableFree) {
                   availableTablesForThisSlot.push({
@@ -283,13 +298,18 @@ export default function Availabilities() {
   // --- Dynamic Layout Dimensions ---
   const minRowHeightPx = 48; // Ensure minimum height so cells aren't too squished
   const headerHeightPx = 60; // Approximate height of the table header
-  
+
   const availableTimelineHeight = containerHeight - headerHeightPx;
-  const stretchedRowHeight = timeSlots.length > 0 ? availableTimelineHeight / timeSlots.length : minRowHeightPx;
+  const stretchedRowHeight =
+    timeSlots.length > 0
+      ? availableTimelineHeight / timeSlots.length
+      : minRowHeightPx;
   const rowHeightPx = Math.max(minRowHeightPx, stretchedRowHeight);
 
   // Get data for selected slot to display in the side panel
-  const selectedCellData = selectedSlot ? gridData[selectedSlot.date]?.[selectedSlot.time] : null;
+  const selectedCellData = selectedSlot
+    ? gridData[selectedSlot.date]?.[selectedSlot.time]
+    : null;
 
   return (
     <div className="flex flex-col p-8 h-[calc(100vh-70px)] overflow-hidden bg-background-light font-display relative">
@@ -303,16 +323,15 @@ export default function Availabilities() {
 
       {/* Main Layout wrapper for Grid & Panel */}
       <div className="flex flex-row w-full h-full items-stretch">
-        
         {/* Scrollable Grid Container */}
-        <div 
+        <div
           ref={containerRef}
           className="flex-1 bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col shadow-sm relative min-w-0 transition-all duration-300"
         >
           <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
             <div className="w-full min-w-[800px] flex flex-col pb-4 h-full">
               {/* X-Axis: Days Header (Sticky Top) */}
-              <div 
+              <div
                 className="flex sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm"
                 style={{ height: headerHeightPx }}
               >
@@ -352,24 +371,27 @@ export default function Availabilities() {
                       available: 0,
                       total: 0,
                       status: "Closed",
-                      tables: []
+                      tables: [],
                     };
-                    
-                    const isSelected = selectedSlot?.date === dateStr && selectedSlot?.time === time;
+
+                    const isSelected =
+                      selectedSlot?.date === dateStr &&
+                      selectedSlot?.time === time;
 
                     return (
                       <div
                         key={`${dateStr}-${time}`}
                         className="flex-1 p-1 border-r border-gray-200 last:border-r-0 h-full"
                       >
-                        <CellRenderer 
-                          data={cellData} 
+                        <CellRenderer
+                          data={cellData}
                           isSelected={isSelected}
                           onClick={() => {
                             if (cellData.status !== "Closed") {
                               // Toggle selection off if already selected, otherwise set it
                               if (isSelected) setSelectedSlot(null);
-                              else setSelectedSlot({ date: dateStr, time: time });
+                              else
+                                setSelectedSlot({ date: dateStr, time: time });
                             }
                           }}
                         />
@@ -396,7 +418,6 @@ export default function Availabilities() {
           }`}
         >
           <div className="w-80 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col h-full overflow-hidden">
-            
             {/* Panel Header */}
             <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50/50 shrink-0">
               <div>
@@ -405,11 +426,16 @@ export default function Availabilities() {
                 </h3>
                 {selectedSlot && (
                   <p className="text-xs font-semibold text-gray-500 mt-1">
-                    {new Date(selectedSlot.date).toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric'})} • {selectedSlot.time}
+                    {new Date(selectedSlot.date).toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                    })}{" "}
+                    • {selectedSlot.time}
                   </p>
                 )}
               </div>
-              <button 
+              <button
                 onClick={() => setSelectedSlot(null)}
                 className="p-1.5 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-200 hover:text-gray-800 transition-colors"
               >
@@ -425,8 +451,8 @@ export default function Availabilities() {
                     {selectedCellData.tables.length} Tables Available
                   </div>
                   {selectedCellData.tables.map((table) => (
-                    <div 
-                      key={table.id} 
+                    <div
+                      key={table.id}
                       className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-white hover:border-blue-200 hover:shadow-sm transition-all group"
                     >
                       <div className="flex items-center gap-3">
@@ -437,7 +463,7 @@ export default function Availabilities() {
                           Table {table.name}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center gap-1.5 text-gray-500 bg-gray-50 px-2.5 py-1 rounded text-sm font-medium">
                         <PeopleAlt fontSize="inherit" />
                         <span>{table.capacity}</span>
@@ -450,43 +476,53 @@ export default function Availabilities() {
                   <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4">
                     <TableRestaurantOutlined fontSize="large" />
                   </div>
-                  <h4 className="text-gray-900 font-bold mb-1">No Tables Available</h4>
+                  <h4 className="text-gray-900 font-bold mb-1">
+                    No Tables Available
+                  </h4>
                   <p className="text-sm text-gray-500">
                     The restaurant is fully booked for this time slot.
                   </p>
                 </div>
               )}
             </div>
-
           </div>
         </div>
-
       </div>
     </div>
   );
 }
 
 // Sub-component to render the specific state of the cell
-function CellRenderer({ data, isSelected, onClick }: { data: Availability, isSelected: boolean, onClick: () => void }) {
-  const baseClasses =
-    `h-full w-full rounded-lg flex items-center justify-center text-xs transition-all ${
-      data.status !== "Closed" ? "cursor-pointer" : "cursor-not-allowed opacity-80"
-    } ${isSelected ? "ring-2 ring-blue-500 ring-offset-2 scale-[0.98] shadow-md" : "hover:scale-[0.98]"}`;
+function CellRenderer({
+  data,
+  isSelected,
+  onClick,
+}: {
+  data: Availability;
+  isSelected: boolean;
+  onClick: () => void;
+}) {
+  const baseClasses = `h-full w-full rounded-lg flex items-center justify-center text-xs transition-all ${
+    data.status !== "Closed"
+      ? "cursor-pointer"
+      : "cursor-not-allowed opacity-80"
+  } ${isSelected ? "ring-2 ring-blue-500 ring-offset-2 scale-[0.98] shadow-md" : "hover:scale-[0.98]"}`;
 
   if (data.status === "Closed") {
     return (
-      <div
-        className={`${baseClasses} bg-red-light text-red-dark`}
-      >
-        Closed
-      </div>
+      <div className={`${baseClasses} bg-red-light text-red-dark`}>Closed</div>
     );
   }
 
   // Prevent divide by zero error if total is 0
   if (data.total === 0) {
     return (
-      <div onClick={onClick} className={`${baseClasses} bg-gray-100 text-gray-400 hover:bg-gray-200`}>N/A</div>
+      <div
+        onClick={onClick}
+        className={`${baseClasses} bg-gray-100 text-gray-400 hover:bg-gray-200`}
+      >
+        N/A
+      </div>
     );
   }
 
