@@ -77,12 +77,9 @@ export default function DateSelector({ selectedDate, onChange }: DateSelectorPro
   };
 
   return (
-    /* 1. Fixed width container: w-[280px]
-      2. justify-between forces the arrows to the extreme left and right 
-    */
     <div className="relative flex items-center justify-between w-[280px]" ref={dropdownRef}>
       
-      {/* Left Arrow - flex-shrink-0 prevents it from getting crushed */}
+      {/* Left Arrow */}
       <button
         onClick={handlePrevDay}
         className="p-1 rounded-full text-gray-500 hover:bg-gray-200 transition-colors flex-shrink-0"
@@ -90,10 +87,10 @@ export default function DateSelector({ selectedDate, onChange }: DateSelectorPro
         <ChevronLeft />
       </button>
 
-      {/* Date Text (Trigger) - flex-1 allows it to take up the exact remaining middle space */}
+      {/* Date Text (Trigger) - Added cursor-pointer here */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="px-2 py-1.5 text-base font-bold text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex-1 mx-1 text-center truncate"
+        className="px-2 py-1.5 text-base font-bold text-gray-800 hover:bg-gray-100 rounded-lg transition-colors flex-1 mx-1 text-center truncate cursor-pointer"
       >
         {formattedDate}
       </button>
@@ -152,7 +149,7 @@ export default function DateSelector({ selectedDate, onChange }: DateSelectorPro
                 <button
                   key={dayNum}
                   onClick={() => handleDaySelect(dayNum)}
-                  className={`h-8 w-8 mx-auto rounded-full flex items-center justify-center transition-all ${
+                  className={`h-8 w-8 mx-auto rounded-full flex items-center justify-center transition-all cursor-pointer ${
                     isSelected 
                       ? "bg-blue-600 text-white font-bold shadow-md" 
                       : "text-gray-700 hover:bg-gray-100 hover:font-semibold"
