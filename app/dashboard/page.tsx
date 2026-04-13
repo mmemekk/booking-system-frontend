@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useTopBar } from "../../component/topbarContext";
-import { PeopleAlt, TableRestaurantOutlined, Check, Close, Undo } from "@mui/icons-material";
+import { PeopleAlt, TableRestaurantOutlined, Check, Close, Undo, Star } from "@mui/icons-material";
 import BookingModal, { BookingDetails } from "../../component/bookingModal";
 import DateSelector from "../../component/dateSelector";
+import AddBookingModal from "../../component/addBookingModal";
 import { config } from "../../config";
 
 // Extended interface to handle the detail view and status
@@ -33,6 +34,10 @@ export default function Dashboard() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  
+  // State to trigger data refreshes across all useEffects
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Track which booking has the cancel/noshow menu open
   const [actionMenuId, setActionMenuId] = useState<string | null>(null);
@@ -49,7 +54,10 @@ export default function Dashboard() {
           selectedDate={currentDate} 
           onChange={(newDate) => setCurrentDate(newDate)} 
         />
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition ">
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition cursor-pointer"
+        >
           Add Booking
         </button>
       </div>,
@@ -108,7 +116,8 @@ export default function Dashboard() {
     };
 
     fetchBookings();
-  }, [currentDate]);
+  // Add refreshTrigger to dependencies
+  }, [currentDate, refreshTrigger]);
 
   // Fetch Table Utilization Data
   useEffect(() => {
@@ -175,7 +184,8 @@ export default function Dashboard() {
     };
 
     fetchUtilization();
-  }, [currentDate]);
+  // Add refreshTrigger to dependencies
+  }, [currentDate, refreshTrigger]);
 
   const handleCardClick = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -238,7 +248,6 @@ export default function Dashboard() {
   const strokeDashoffsetMetric1 = circumference - (coverPercentage / 100) * circumference;
 
   // --- METRIC 2 CALCULATIONS (Waffle Grid) ---
-  // Ensure we show at least 1 block if there is a percentage > 0, otherwise standard rounding
   const activeSquares = metric2Data.percentage > 0 
     ? Math.max(1, Math.round((metric2Data.percentage / 100) * 25)) 
     : 0;
@@ -258,7 +267,6 @@ export default function Dashboard() {
   const createdPct = totalBookingsCount === 0 ? 0 : (createdCount / totalBookingsCount) * 100;
   const noShowPct = totalBookingsCount === 0 ? 0 : (noShowCount / totalBookingsCount) * 100;
   const canceledPct = totalBookingsCount === 0 ? 0 : (canceledCount / totalBookingsCount) * 100;
-
 
   const renderBookingCard = (booking: Booking, isUpcoming: boolean) => (
     <div
@@ -284,11 +292,25 @@ export default function Dashboard() {
         <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
           Ref: {booking.bookingRef}
         </span>
-        <p className={`font-semibold text-grey-heading flex items-center gap-2 leading-none ${
-          isUpcoming ? "group-hover:text-blue-dark" : "group-hover:text-gray-900"
-        }`}>
-          {booking.customerName}
-        </p>
+        
+        {/* Updated Customer Name row to include the Special Request Badge */}
+        <div className="flex items-center gap-2">
+          <p className={`font-semibold text-grey-heading leading-none ${
+            isUpcoming ? "group-hover:text-blue-dark" : "group-hover:text-gray-900"
+          }`}>
+            {booking.customerName}
+          </p>
+          {booking.specialRequest && booking.specialRequest.trim() !== "" && (
+            <span 
+              className="flex items-center gap-1 bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded text-[10px] font-bold  tracking-wider"
+              title={`Special Request: ${booking.specialRequest}`}
+            >
+              <Star sx={{ fontSize: 12 }} />
+              Special Request
+            </span>
+          )}
+        </div>
+
         <div className="flex items-center gap-4 text-sm text-grey-text mt-1">
           <div className="flex items-center gap-1.5">
             <PeopleAlt sx={{ fontSize: 18, color: 'var(--color-grey-text)' }} />
@@ -306,7 +328,7 @@ export default function Dashboard() {
           <>
             <button 
               onClick={(e) => handleUpdateStatus(e, booking.bookingRef, 'success')}
-              className="flex items-center p-2 justify-center rounded-full text-green-600 hover:bg-green-100 transition-colors"
+              className="flex items-center p-2 justify-center rounded-full text-green-600 hover:bg-green-100 transition-colors cursor-pointer"
             >
               <Check sx={{ fontSize: 22 }} />
             </button>
@@ -314,7 +336,7 @@ export default function Dashboard() {
             <div className="relative">
               <button 
                 onClick={(e) => toggleActionMenu(e, booking.id)}
-                className={`flex items-center p-2 justify-center rounded-full transition-colors ${
+                className={`flex items-center p-2 justify-center rounded-full transition-colors cursor-pointer ${
                   actionMenuId === booking.id ? "bg-red-100 text-red-700" : "text-red-600 hover:bg-red-100"
                 }`}
               >
@@ -325,13 +347,13 @@ export default function Dashboard() {
                 <div className="absolute right-12 top-0 w-40 bg-white rounded-lg shadow-[0_4px_20px_rgba(0,0,0,0.15)] border border-gray-100 py-1.5 z-50">
                   <button 
                     onClick={(e) => handleUpdateStatus(e, booking.bookingRef, 'noshow')}
-                    className="w-full text-left px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                    className="w-full text-left px-4 py-2.5 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors cursor-pointer"
                   >
                     Mark No Show
                   </button>
                   <button 
                     onClick={(e) => handleUpdateStatus(e, booking.bookingRef, 'canceled')}
-                    className="w-full text-left px-4 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+                    className="w-full text-left px-4 py-2.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                   >
                     Cancel Booking
                   </button>
@@ -351,7 +373,7 @@ export default function Dashboard() {
             
             <button 
               onClick={(e) => handleUpdateStatus(e, booking.bookingRef, 'created')}
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-[12px] font-semibold text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              className="flex items-center gap-1 px-2 py-1 rounded-md text-[12px] font-semibold text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
               title="Revert to upcoming"
             >
               <Undo sx={{ fontSize: 14 }} />
@@ -421,7 +443,6 @@ export default function Dashboard() {
           <div className="flex items-center justify-center h-20 w-20">
             <div className="grid grid-cols-5 gap-1 w-full h-full p-1">
               {Array.from({ length: 25 }).map((_, i) => {
-                // Calculate index to fill from bottom-to-top, mimicking a "capacity filling up" look
                 const row = Math.floor(i / 5);
                 const col = i % 5;
                 const fillIndex = (4 - row) * 5 + col; 
@@ -459,7 +480,6 @@ export default function Dashboard() {
               </div>
             </div>
             
-            {/* Quick Badges for Lost Stats */}
             <div className="flex flex-col items-end gap-2 mt-0.5">
               <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded leading-none border border-red-100">
                 {canceledCount} Canceled
@@ -470,7 +490,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Horizontal Stacked Bar Visual */}
           <div className="flex flex-col gap-1.5 mt-auto">
             <div className="flex w-full h-2.5 rounded-full overflow-hidden bg-gray-100">
               {successPct > 0 && <div className="bg-green-500 transition-all duration-1000" style={{ width: `${successPct}%` }} title={`Seated: ${successCount}`} />}
@@ -487,7 +506,7 @@ export default function Dashboard() {
 
       </div>
 
-      {/* Stacked Layout for Upcoming & Past Bookings with shared scroll */}
+      {/* Stacked Layout for Upcoming & Past Bookings */}
       <div className="flex flex-col gap-6 flex-1 overflow-y-auto pb-4 pr-2">
         
         {/* UPCOMING BOOKINGS */}
@@ -529,6 +548,16 @@ export default function Dashboard() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         booking={selectedBooking} 
+        onSuccess={() => setRefreshTrigger(prev => prev + 1)}
+      />
+
+      <AddBookingModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onSuccess={() => {
+          // Triggers both fetchBookings and fetchUtilization to re-run!
+          setRefreshTrigger(prev => prev + 1); 
+        }} 
       />
     </div>
   );

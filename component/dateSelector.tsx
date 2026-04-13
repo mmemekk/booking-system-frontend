@@ -82,7 +82,7 @@ export default function DateSelector({ selectedDate, onChange }: DateSelectorPro
       {/* Left Arrow */}
       <button
         onClick={handlePrevDay}
-        className="p-1 rounded-full text-gray-500 hover:bg-gray-200 transition-colors flex-shrink-0"
+        className="p-1 rounded-full text-gray-500 hover:bg-gray-200 transition-colors flex-shrink-0 cursor-pointer"
       >
         <ChevronLeft />
       </button>
@@ -98,7 +98,7 @@ export default function DateSelector({ selectedDate, onChange }: DateSelectorPro
       {/* Right Arrow */}
       <button
         onClick={handleNextDay}
-        className="p-1 rounded-full text-gray-500 hover:bg-gray-200 transition-colors flex-shrink-0"
+        className="p-1 rounded-full text-gray-500 hover:bg-gray-200 transition-colors flex-shrink-0 cursor-pointer"
       >
         <ChevronRight />
       </button>

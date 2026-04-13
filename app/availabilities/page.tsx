@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useTopBar } from "../../component/topbarContext";
 import WeekSelector from "../../component/weekSelector";
+import { Close, TableRestaurantOutlined, PeopleAlt } from "@mui/icons-material";
 import { config } from "../../config";
 
 const baseUrl = config.baseUrl;
@@ -11,14 +12,21 @@ const slotMinutes = Number(config.slot) || 30; // Use config slot or default to 
 
 type SlotStatus = "Open" | "Closed";
 
+interface TableInfo {
+  id: number;
+  name: string;
+  capacity: number;
+}
+
 interface Availability {
   available: number;
   total: number;
   status: SlotStatus;
+  tables: TableInfo[]; // Newly added to hold the exact available tables
 }
 
 // Data structure to hold the processed API results
-// { "YYYY-MM-DD": { "HH:MM": { available, total, status } } }
+// { "YYYY-MM-DD": { "HH:MM": { available, total, status, tables } } }
 type AggregatedData = Record<string, Record<string, Availability>>;
 
 // Helper to add/subtract days from a date
@@ -36,6 +44,13 @@ export default function Availabilities() {
   const [gridData, setGridData] = useState<AggregatedData>({});
   const [isLoading, setIsLoading] = useState(true);
 
+  // --- NEW: State for Side Panel ---
+  const [selectedSlot, setSelectedSlot] = useState<{ date: string; time: string } | null>(null);
+
+  // Dynamic Height Tracking
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerHeight, setContainerHeight] = useState(0);
+
   // We'll calculate the dynamic timeline based on all 7 days of store hours
   const [timelineConfig, setTimelineConfig] = useState({
     start: "08:00",
@@ -47,17 +62,20 @@ export default function Availabilities() {
     const weekStart = currentDate;
     const weekEnd = addDays(currentDate, 6);
 
-    const formatShortDate = (d: Date) =>
-      d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-
     setTopBar(
       "Availabilities",
       <div className="flex gap-4 items-center">
-        <WeekSelector selectedDate={currentDate} onChange={setCurrentDate} />
+        <WeekSelector selectedDate={currentDate} onChange={(newDate) => {
+          setCurrentDate(newDate);
+          setSelectedSlot(null); // Close panel on week change
+        }} />
 
         {/* Quick jump to current week */}
         <button
-          onClick={() => setCurrentDate(new Date())}
+          onClick={() => {
+            setCurrentDate(new Date());
+            setSelectedSlot(null);
+          }}
           className="px-4 h-9 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 shadow-sm transition-colors cursor-pointer"
         >
           Today
@@ -65,6 +83,18 @@ export default function Availabilities() {
       </div>,
     );
   }, [setTopBar, currentDate]);
+
+  // Resize Observer to track container height
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        setContainerHeight(entry.contentRect.height);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // Generate the 7-day array based on the selected Date
   const dateStrings = useMemo(() => {
@@ -172,10 +202,16 @@ export default function Availabilities() {
           // Create an array of free minutes for every single table.
           const tableAvailabilities = availData.map((table: any) => {
             const chunks = table.availabilities || [];
-            return chunks.map((c: any) => ({
-              open: parseTimeToMinutes(c.openTime),
-              close: parseTimeToMinutes(c.closeTime),
-            }));
+            return {
+              id: table.id,
+              name: table.name,
+              capacity: table.capacity,
+              chunks: chunks.map((c: any) => ({
+                // Handled gracefully in case API returns 'from'/'to' OR 'openTime'/'closeTime'
+                open: parseTimeToMinutes(c.openTime || c.from),
+                close: parseTimeToMinutes(c.closeTime || c.to),
+              })),
+            };
           });
 
           // Loop through every possible slot
@@ -195,22 +231,29 @@ export default function Availabilities() {
                 (r) => slotStart >= r.open && slotEnd <= r.close,
               );
 
-            let availableCount = 0;
+            const availableTablesForThisSlot: TableInfo[] = [];
 
             if (isOpenTime) {
-              // Count how many tables are completely free for this entire chunk
-              tableAvailabilities.forEach((chunks: any) => {
-                const isTableFree = chunks.some(
+              // Extract EXACT tables free for this entire chunk
+              tableAvailabilities.forEach((t) => {
+                const isTableFree = t.chunks.some(
                   (c: any) => slotStart >= c.open && slotEnd <= c.close,
                 );
-                if (isTableFree) availableCount++;
+                if (isTableFree) {
+                  availableTablesForThisSlot.push({
+                    id: t.id,
+                    name: t.name,
+                    capacity: t.capacity,
+                  });
+                }
               });
             }
 
             aggregated[date][timeStr] = {
               status: isOpenTime ? "Open" : "Closed",
               total: numTables,
-              available: availableCount,
+              available: availableTablesForThisSlot.length,
+              tables: availableTablesForThisSlot, // Push array into grid mapping
             };
           }
         });
@@ -237,6 +280,17 @@ export default function Availabilities() {
     return slots;
   }, [timelineConfig]);
 
+  // --- Dynamic Layout Dimensions ---
+  const minRowHeightPx = 48; // Ensure minimum height so cells aren't too squished
+  const headerHeightPx = 60; // Approximate height of the table header
+  
+  const availableTimelineHeight = containerHeight - headerHeightPx;
+  const stretchedRowHeight = timeSlots.length > 0 ? availableTimelineHeight / timeSlots.length : minRowHeightPx;
+  const rowHeightPx = Math.max(minRowHeightPx, stretchedRowHeight);
+
+  // Get data for selected slot to display in the side panel
+  const selectedCellData = selectedSlot ? gridData[selectedSlot.date]?.[selectedSlot.time] : null;
+
   return (
     <div className="flex flex-col p-8 h-[calc(100vh-70px)] overflow-hidden bg-background-light font-display relative">
       {isLoading && (
@@ -247,82 +301,182 @@ export default function Availabilities() {
         </div>
       )}
 
-      {/* Scrollable Grid Container */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col w-full shadow-sm relative h-full">
-        <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
-          <div className="w-full min-w-[800px] flex flex-col pb-4">
-            {/* X-Axis: Days Header (Sticky Top) */}
-            <div className="flex sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-              <div className="w-24 flex-shrink-0 sticky left-0 z-40 bg-white border-r border-gray-200">
-                {/* Empty corner cell */}
+      {/* Main Layout wrapper for Grid & Panel */}
+      <div className="flex flex-row w-full h-full items-stretch">
+        
+        {/* Scrollable Grid Container */}
+        <div 
+          ref={containerRef}
+          className="flex-1 bg-white border border-gray-200 rounded-xl overflow-hidden flex flex-col shadow-sm relative min-w-0 transition-all duration-300"
+        >
+          <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+            <div className="w-full min-w-[800px] flex flex-col pb-4 h-full">
+              {/* X-Axis: Days Header (Sticky Top) */}
+              <div 
+                className="flex sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm"
+                style={{ height: headerHeightPx }}
+              >
+                <div className="w-24 flex-shrink-0 sticky left-0 z-40 bg-white border-r border-gray-200">
+                  {/* Empty corner cell */}
+                </div>
+                {daysHeader.map((dayLabel, idx) => (
+                  <div
+                    key={dayLabel}
+                    className="flex-1 px-2 py-3 text-sm font-bold text-gray-800 flex flex-col items-center justify-center border-r border-gray-200 last:border-r-0 h-full"
+                  >
+                    <span>{dayLabel}</span>
+                    <span className="text-[10px] font-normal text-gray-400">
+                      {dateStrings[idx]}
+                    </span>
+                  </div>
+                ))}
               </div>
-              {daysHeader.map((dayLabel, idx) => (
+
+              {/* Y-Axis & Grid Body */}
+              {timeSlots.map((time) => (
                 <div
-                  key={dayLabel}
-                  className="flex-1 px-2 py-3 text-sm font-bold text-gray-800 flex flex-col items-center justify-center border-r border-gray-200 last:border-r-0"
+                  key={time}
+                  className="flex border-b border-gray-200 last:border-b-0 hover:bg-gray-50/50 transition-colors group"
+                  style={{ height: rowHeightPx }}
                 >
-                  <span>{dayLabel}</span>
-                  <span className="text-[10px] font-normal text-gray-400">
-                    {dateStrings[idx]}
-                  </span>
+                  {/* Time Label Column (Sticky Left) */}
+                  <div className="w-24 flex-shrink-0 sticky left-0 z-20 bg-white border-r border-gray-200 flex items-center justify-center group-hover:bg-gray-50 transition-colors h-full">
+                    <span className="text-xs text-gray-500 font-medium">
+                      {time}
+                    </span>
+                  </div>
+
+                  {/* Data Cells */}
+                  {dateStrings.map((dateStr) => {
+                    const cellData = gridData[dateStr]?.[time] || {
+                      available: 0,
+                      total: 0,
+                      status: "Closed",
+                      tables: []
+                    };
+                    
+                    const isSelected = selectedSlot?.date === dateStr && selectedSlot?.time === time;
+
+                    return (
+                      <div
+                        key={`${dateStr}-${time}`}
+                        className="flex-1 p-1 border-r border-gray-200 last:border-r-0 h-full"
+                      >
+                        <CellRenderer 
+                          data={cellData} 
+                          isSelected={isSelected}
+                          onClick={() => {
+                            if (cellData.status !== "Closed") {
+                              // Toggle selection off if already selected, otherwise set it
+                              if (isSelected) setSelectedSlot(null);
+                              else setSelectedSlot({ date: dateStr, time: time });
+                            }
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               ))}
-            </div>
 
-            {/* Y-Axis & Grid Body */}
-            {timeSlots.map((time) => (
-              <div
-                key={time}
-                className="flex border-b border-gray-200 last:border-b-0 hover:bg-gray-50/50 transition-colors group"
-              >
-                {/* Time Label Column (Sticky Left) */}
-                <div className="w-24 flex-shrink-0 sticky left-0 z-20 bg-white border-r border-gray-200 flex items-center justify-center group-hover:bg-gray-50 transition-colors">
-                  <span className="text-xs text-gray-500 font-medium">
-                    {format24hTo12h(time)}
-                  </span>
+              {/* Empty state message if dates are completely empty/closed */}
+              {!isLoading && timeSlots.length === 0 && (
+                <div className="p-8 text-center text-gray-500">
+                  No availability data found for this week.
                 </div>
-
-                {/* Data Cells */}
-                {dateStrings.map((dateStr) => {
-                  const cellData = gridData[dateStr]?.[time] || {
-                    available: 0,
-                    total: 0,
-                    status: "Closed",
-                  };
-                  return (
-                    <div
-                      key={`${dateStr}-${time}`}
-                      className="flex-1 p-1 border-r border-gray-200 last:border-r-0"
-                    >
-                      <CellRenderer data={cellData} />
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-
-            {/* Empty state message if dates are completely empty/closed */}
-            {!isLoading && timeSlots.length === 0 && (
-              <div className="p-8 text-center text-gray-500">
-                No availability data found for this week.
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Side Panel pushing in from right */}
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-hidden flex-shrink-0 flex flex-col ${
+            selectedSlot ? "w-80 opacity-100 ml-6" : "w-0 opacity-0 ml-0"
+          }`}
+        >
+          <div className="w-80 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col h-full overflow-hidden">
+            
+            {/* Panel Header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50/50 shrink-0">
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg leading-tight">
+                  Available Tables
+                </h3>
+                {selectedSlot && (
+                  <p className="text-xs font-semibold text-gray-500 mt-1">
+                    {new Date(selectedSlot.date).toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric'})} • {selectedSlot.time}
+                  </p>
+                )}
+              </div>
+              <button 
+                onClick={() => setSelectedSlot(null)}
+                className="p-1.5 bg-gray-100 text-gray-500 rounded-full hover:bg-gray-200 hover:text-gray-800 transition-colors"
+              >
+                <Close fontSize="small" />
+              </button>
+            </div>
+
+            {/* Panel Body */}
+            <div className="p-5 flex-1 overflow-y-auto">
+              {selectedCellData && selectedCellData.tables.length > 0 ? (
+                <div className="flex flex-col gap-3">
+                  <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+                    {selectedCellData.tables.length} Tables Available
+                  </div>
+                  {selectedCellData.tables.map((table) => (
+                    <div 
+                      key={table.id} 
+                      className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-white hover:border-blue-200 hover:shadow-sm transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-md bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                          <TableRestaurantOutlined fontSize="small" />
+                        </div>
+                        <span className="font-bold text-gray-800">
+                          Table {table.name}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1.5 text-gray-500 bg-gray-50 px-2.5 py-1 rounded text-sm font-medium">
+                        <PeopleAlt fontSize="inherit" />
+                        <span>{table.capacity}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center px-4 py-10">
+                  <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center text-gray-300 mb-4">
+                    <TableRestaurantOutlined fontSize="large" />
+                  </div>
+                  <h4 className="text-gray-900 font-bold mb-1">No Tables Available</h4>
+                  <p className="text-sm text-gray-500">
+                    The restaurant is fully booked for this time slot.
+                  </p>
+                </div>
+              )}
+            </div>
+
+          </div>
+        </div>
+
       </div>
     </div>
   );
 }
 
 // Sub-component to render the specific state of the cell
-function CellRenderer({ data }: { data: Availability }) {
+function CellRenderer({ data, isSelected, onClick }: { data: Availability, isSelected: boolean, onClick: () => void }) {
   const baseClasses =
-    "h-10 w-full rounded-lg cursor-pointer flex items-center justify-center text-xs transition-colors";
+    `h-full w-full rounded-lg flex items-center justify-center text-xs transition-all ${
+      data.status !== "Closed" ? "cursor-pointer" : "cursor-not-allowed opacity-80"
+    } ${isSelected ? "ring-2 ring-blue-500 ring-offset-2 scale-[0.98] shadow-md" : "hover:scale-[0.98]"}`;
 
   if (data.status === "Closed") {
     return (
       <div
-        className={`${baseClasses} bg-red-light text-red-dark hover:bg-red-500/20 hover:border border-red-500/40`}
+        className={`${baseClasses} bg-red-light text-red-dark`}
       >
         Closed
       </div>
@@ -332,14 +486,15 @@ function CellRenderer({ data }: { data: Availability }) {
   // Prevent divide by zero error if total is 0
   if (data.total === 0) {
     return (
-      <div className={`${baseClasses} bg-gray-100 text-gray-400`}>N/A</div>
+      <div onClick={onClick} className={`${baseClasses} bg-gray-100 text-gray-400 hover:bg-gray-200`}>N/A</div>
     );
   }
 
   if (data.available === 0) {
     return (
       <div
-        className={`${baseClasses} bg-red-light text-red-dark hover:bg-red-500/20 hover:border border-red-500/40`}
+        onClick={onClick}
+        className={`${baseClasses} bg-red-light text-red-dark hover:bg-red-200`}
       >
         Full
       </div>
@@ -351,7 +506,8 @@ function CellRenderer({ data }: { data: Availability }) {
   if (percentage <= 0.3) {
     return (
       <div
-        className={`${baseClasses} bg-orange-light text-orange-dark hover:bg-orange-500/20 hover:border border-orange-500/40`}
+        onClick={onClick}
+        className={`${baseClasses} bg-orange-light text-orange-dark hover:bg-orange-200`}
       >
         {data.available}/{data.total}
       </div>
@@ -360,7 +516,8 @@ function CellRenderer({ data }: { data: Availability }) {
 
   return (
     <div
-      className={`${baseClasses} bg-green-light text-green-dark hover:bg-green-500/20 hover:border border-green-500/40`}
+      onClick={onClick}
+      className={`${baseClasses} bg-green-light text-green-dark hover:bg-green-200`}
     >
       {data.available === data.total
         ? "Open"
@@ -381,13 +538,4 @@ function formatMinutesTo24h(totalMinutes: number) {
   const hh = Math.floor(totalMinutes / 60);
   const mm = totalMinutes % 60;
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
-}
-
-function format24hTo12h(time24: string) {
-  if (!time24) return "";
-  const [hourStr, minStr] = time24.split(":");
-  const hour = parseInt(hourStr, 10);
-  const suffix = hour >= 12 ? "PM" : "AM";
-  const hour12 = hour % 12 || 12;
-  return `${hour12}:${minStr} ${suffix}`;
 }

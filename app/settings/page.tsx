@@ -119,6 +119,17 @@ export default function Settings() {
   // -----------------------------
   const handleRestaurantChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+
+    // Restrict phone input to numbers only
+    if (name === "phone") {
+      const numbersOnly = value.replace(/\D/g, "");
+      setRestaurantDetails((prev) => ({
+        ...prev,
+        [name]: numbersOnly,
+      }));
+      return;
+    }
+
     setRestaurantDetails((prev) => ({ 
       ...prev, 
       [name]: name === "slotDuration" ? Number(value) : value 
@@ -269,6 +280,7 @@ export default function Settings() {
               </label>
               <input
                 name="phone"
+                type="tel"
                 value={restaurantDetails.phone}
                 onChange={handleRestaurantChange}
                 className="mt-1 block w-full h-9 rounded-md border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
