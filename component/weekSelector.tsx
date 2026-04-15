@@ -13,8 +13,9 @@ const addDays = (date: Date, days: number) => {
   return result;
 };
 
+// Changed "en-US" to "en-GB" and swapped the order to force "15 Apr"
 const formatShortDate = (date: Date) =>
-  date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
 export default function WeekSelector({
   selectedDate,

@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useTopBar } from "../../component/topbarContext";
 import WeekSelector from "../../component/weekSelector";
+import { useSlot } from "../../hooks/useSlot";
 import { Close, TableRestaurantOutlined, PeopleAlt } from "@mui/icons-material";
 import { config } from "../../config";
 
 const baseUrl = config.baseUrl;
 const restaurantId = config.restaurantId;
-const slotMinutes = Number(config.slot) || 30; // Use config slot or default to 30
 
 type SlotStatus = "Open" | "Closed";
 
@@ -45,6 +45,9 @@ const addDays = (date: Date, days: number) => {
 
 export default function Availabilities() {
   const { setTopBar } = useTopBar();
+  const { slot } = useSlot();
+  const slotMinutes = Number(slot) || 30;
+
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // State for the processed grid data

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useTopBar } from "../../component/topbarContext";
+import { useSlot } from "../../hooks/useSlot";
 import DateSelector from "../../component/dateSelector";
 import BookingModal, { BookingDetails } from "../../component/bookingModal";
 import AddBookingModal from "../../component/addBookingModal";
@@ -10,7 +11,6 @@ import { config } from "../../config";
 
 const baseUrl = config.baseUrl;
 const restaurantId = config.restaurantId;
-const slotMinutes = Number(config.slot) || 30; // Use config slot or default to 30
 
 // Extend BookingDetails to ensure all required fields for the modal exist,
 // plus the extra fields needed for grid placement.
@@ -38,6 +38,8 @@ type TableException = {
 
 export default function Bookings() {
   const { setTopBar } = useTopBar();
+  const { slot } = useSlot();
+  const slotMinutes = Number(slot) || 30;
 
   // State for DateSelector and API Data
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -98,7 +100,7 @@ export default function Bookings() {
           </div>
         </div>
 
-        <button 
+        <button
           onClick={() => setIsAddModalOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition cursor-pointer shadow-sm"
         >
@@ -232,7 +234,7 @@ export default function Bookings() {
     };
 
     fetchTimelineData();
-  // Add refreshTrigger to dependencies
+    // Add refreshTrigger to dependencies
   }, [currentDate, refreshTrigger]);
 
   // --- Grid Calculations ---
@@ -396,13 +398,23 @@ export default function Bookings() {
                     {showExceptions &&
                       thisTableExceptions.map((exc) => {
                         // Handle isClosed = true (spanning entire timeline) vs partial blocks
-                        const startSlot = exc.isClosed || !exc.exceptTimeFrom
-                          ? 0 
-                          : getSlotIndex(exc.exceptTimeFrom, storeHours.start, slotMinutes);
-                          
-                        const endSlot = exc.isClosed || !exc.exceptTimeTo
-                          ? numSlots 
-                          : getSlotIndex(exc.exceptTimeTo, storeHours.start, slotMinutes);
+                        const startSlot =
+                          exc.isClosed || !exc.exceptTimeFrom
+                            ? 0
+                            : getSlotIndex(
+                                exc.exceptTimeFrom,
+                                storeHours.start,
+                                slotMinutes,
+                              );
+
+                        const endSlot =
+                          exc.isClosed || !exc.exceptTimeTo
+                            ? numSlots
+                            : getSlotIndex(
+                                exc.exceptTimeTo,
+                                storeHours.start,
+                                slotMinutes,
+                              );
 
                         const durationSlots = Math.max(1, endSlot - startSlot);
 
@@ -417,10 +429,18 @@ export default function Bookings() {
                               left: `${leftPx}px`,
                               width: `${widthPx}px`,
                             }}
-                            title={exc.description || (exc.isClosed ? "Closed All Day" : "Table Exception")}
+                            title={
+                              exc.description ||
+                              (exc.isClosed
+                                ? "Closed All Day"
+                                : "Table Exception")
+                            }
                           >
                             <span className="font-bold text-xs truncate block px-2 text-center w-full text-gray-500">
-                              {exc.description || (exc.isClosed ? "Closed All Day" : "Unavailable")}
+                              {exc.description ||
+                                (exc.isClosed
+                                  ? "Closed All Day"
+                                  : "Unavailable")}
                             </span>
                           </div>
                         );
