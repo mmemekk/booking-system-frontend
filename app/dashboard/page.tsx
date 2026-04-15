@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTopBar } from "../../component/topbarContext";
-import { PeopleAlt, TableRestaurantOutlined, Check, Close, Undo, Star } from "@mui/icons-material";
+import { PeopleAlt, TableRestaurantOutlined, Check, Close, Undo, Star, Add} from "@mui/icons-material";
 import BookingModal, { BookingDetails } from "../../component/bookingModal";
 import DateSelector from "../../component/dateSelector";
 import AddBookingModal from "../../component/addBookingModal";
@@ -56,8 +56,9 @@ export default function Dashboard() {
         />
         <button 
           onClick={() => setIsAddModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition cursor-pointer shadow-sm"
         >
+        <Add fontSize="small" />
           Add Booking
         </button>
       </div>,

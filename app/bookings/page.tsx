@@ -5,6 +5,7 @@ import { useTopBar } from "../../component/topbarContext";
 import DateSelector from "../../component/dateSelector";
 import BookingModal, { BookingDetails } from "../../component/bookingModal";
 import AddBookingModal from "../../component/addBookingModal";
+import { Add } from "@mui/icons-material";
 import { config } from "../../config";
 
 const baseUrl = config.baseUrl;
@@ -29,10 +30,10 @@ type TableException = {
   id: number;
   tableId: number;
   date: string;
-  exceptTimeFrom: string;
-  exceptTimeTo: string;
+  exceptTimeFrom: string | null;
+  exceptTimeTo: string | null;
   isClosed: boolean;
-  description: string;
+  description: string | null;
 };
 
 export default function Bookings() {
@@ -99,8 +100,9 @@ export default function Bookings() {
 
         <button 
           onClick={() => setIsAddModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition cursor-pointer shadow-sm"
         >
+          <Add fontSize="small" />
           Add Booking
         </button>
       </div>,
@@ -393,16 +395,15 @@ export default function Bookings() {
                     {/* 1. Render Exceptions (Behind bookings) */}
                     {showExceptions &&
                       thisTableExceptions.map((exc) => {
-                        const startSlot = getSlotIndex(
-                          exc.exceptTimeFrom,
-                          storeHours.start,
-                          slotMinutes,
-                        );
-                        const endSlot = getSlotIndex(
-                          exc.exceptTimeTo,
-                          storeHours.start,
-                          slotMinutes,
-                        );
+                        // Handle isClosed = true (spanning entire timeline) vs partial blocks
+                        const startSlot = exc.isClosed || !exc.exceptTimeFrom
+                          ? 0 
+                          : getSlotIndex(exc.exceptTimeFrom, storeHours.start, slotMinutes);
+                          
+                        const endSlot = exc.isClosed || !exc.exceptTimeTo
+                          ? numSlots 
+                          : getSlotIndex(exc.exceptTimeTo, storeHours.start, slotMinutes);
+
                         const durationSlots = Math.max(1, endSlot - startSlot);
 
                         const leftPx = startSlot * slotWidthPx + 2;
@@ -411,15 +412,15 @@ export default function Bookings() {
                         return (
                           <div
                             key={`exc-${exc.id}`}
-                            className="absolute top-3 bottom-3 rounded-lg border border-gray-300 bg-gray-100 flex flex-col items-center justify-center shadow-sm z-0 overflow-hidden"
+                            className="absolute top-3 bottom-3 rounded-lg border flex flex-col items-center justify-center shadow-sm z-0 overflow-hidden bg-gray-100 border-gray-300"
                             style={{
                               left: `${leftPx}px`,
                               width: `${widthPx}px`,
                             }}
-                            title={exc.description || "Table Exception"}
+                            title={exc.description || (exc.isClosed ? "Closed All Day" : "Table Exception")}
                           >
-                            <span className="font-bold text-xs text-gray-text truncate block px-2 text-center w-full">
-                              {exc.description || "Unavailable"}
+                            <span className="font-bold text-xs truncate block px-2 text-center w-full text-gray-500">
+                              {exc.description || (exc.isClosed ? "Closed All Day" : "Unavailable")}
                             </span>
                           </div>
                         );
@@ -441,7 +442,7 @@ export default function Bookings() {
                       const durationSlots = Math.max(1, endSlot - startSlot);
                       const leftPx = startSlot * slotWidthPx + 2;
                       const widthPx = durationSlots * slotWidthPx - 4;
-                      const style = statusToStyle(b.status); // b.status is now safe to pass
+                      const style = statusToStyle(b.status);
 
                       return (
                         <div
@@ -478,6 +479,7 @@ export default function Bookings() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         booking={selectedBooking}
+        onSuccess={() => setRefreshTrigger((prev) => prev + 1)}
       />
 
       <AddBookingModal
@@ -493,7 +495,7 @@ export default function Bookings() {
 
 // --- Helper Functions ---
 
-function parseTimeToMinutes(time: string) {
+function parseTimeToMinutes(time: string | null) {
   if (!time) return 0;
   const [hh, mm] = time.split(":").map((v) => Number(v));
   return hh * 60 + mm;
@@ -520,32 +522,31 @@ function adjustEndTime(startTime: string, durationMins: number) {
   return formatMinutesToTime(start + durationMins);
 }
 
-// Updated to accept 'string' to resolve TypeScript errors
 function statusToStyle(status: string) {
   switch (status) {
     case "created":
       return {
-        bg: "var(--color-blue-light, #e0f2fe)",
-        border: "var(--color-blue-stroke, #bae6fd)",
-        text: "var(--color-blue-dark, #0369a1)",
+        bg: "var(--color-blue-light)",
+        border: "var(--color-blue-stroke)",
+        text: "var(--color-blue-dark)",
       };
     case "success":
       return {
-        bg: "var(--color-green-light, #dcfce7)",
-        border: "var(--color-green-stroke, #bbf7d0)",
-        text: "var(--color-green-dark, #15803d)",
+        bg: "var(--color-green-light)",
+        border: "var(--color-green-stroke)",
+        text: "var(--color-green-dark)",
       };
     case "noshow":
       return {
-        bg: "var(--color-orange-light, #ffedd5)",
-        border: "var(--color-orange-stroke, #fed7aa)",
-        text: "var(--color-orange-dark, #c2410c)",
+        bg: "var(--color-orange-light)",
+        border: "var(--color-orange-stroke)",
+        text: "var(--color-orange-dark)",
       };
     case "canceled":
       return {
-        bg: "var(--color-red-light, #fee2e2)",
-        border: "var(--color-red-stroke, #fecaca)",
-        text: "var(--color-red-dark, #b91c1c)",
+        bg: "var(--color-red-light)",
+        border: "var(--color-red-stroke)",
+        text: "var(--color-red-dark)",
       };
     default:
       return { bg: "#f3f4f6", border: "#e5e7eb", text: "#374151" };

@@ -1,6 +1,6 @@
 // lib/config.ts
 export const config = {
-  baseUrl: 'https://booking-system-backend-production-54ed.up.railway.app', // Fallback for dev
+  baseUrl: 'http://localhost:3000', 
   restaurantId: 3,
   slot: 30
 };

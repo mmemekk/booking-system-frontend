@@ -208,6 +208,19 @@ export default function Settings() {
 
       if (allSuccessful) {
         setHoursSaveStatus("success");
+
+        // Quietly update all tables in the restaurant to sync with the new store hours (Single API Call)
+        fetch(`${baseUrl}/restaurant/${restaurantId}/table/availability/all`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            dayOfWeek: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
+            isUseStoreHour: true
+          }),
+        }).catch(err => console.error("Error quietly syncing tables with store hours:", err));
+
       } else {
         console.error("Some days failed to update properly.");
         setHoursSaveStatus("error");
@@ -425,7 +438,7 @@ export default function Settings() {
             onClick={handleSaveHours}
             disabled={isSavingHours}
             className={`rounded-md px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors ${
-              isSavingHours ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              isSavingHours ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
             }`}
           >
             {isSavingHours ? "Saving..." : "Save Hours"}
