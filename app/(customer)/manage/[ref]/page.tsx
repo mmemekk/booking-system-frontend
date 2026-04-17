@@ -124,6 +124,21 @@ export default function ManageBookingPage() {
     });
   }, [availableTables, editData.capacity, editData.startTime, booking]);
 
+  // --- Date Logic to prevent past modifications ---
+  const isPastBooking = useMemo(() => {
+    if (!booking?.bookingDate) return false;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Strip time for accurate date comparison
+    
+    // Parse "YYYY-MM-DD" safely in local time
+    const [year, month, day] = booking.bookingDate.split("-").map(Number);
+    const bDate = new Date(year, month - 1, day);
+    bDate.setHours(0, 0, 0, 0);
+
+    return bDate < today;
+  }, [booking?.bookingDate]);
+
   // --- Handlers ---
   const handleTimeBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const timeVal = e.target.value;
@@ -348,23 +363,30 @@ export default function ManageBookingPage() {
                 </div>
               )}
 
-              <div className="flex flex-col gap-3 mt-4">
-                <button 
-                  onClick={() => {
-                    setIsEditing(true);
-                    setSuccessMessage(null); // Clear success message if they re-enter edit mode
-                  }}
-                  className="w-full py-3.5 font-bold rounded-xl transition-colors border border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100"
-                >
-                  Modify Reservation
-                </button>
-                <button 
-                  onClick={() => setIsCancelModalOpen(true)}
-                  className="w-full py-3.5 bg-red-50 text-red-600 border border-red-200 font-bold rounded-xl hover:bg-red-100 transition-colors"
-                >
-                  Cancel Reservation
-                </button>
-              </div>
+              {/* Prevent editing or canceling if the booking is in the past */}
+              {!isPastBooking ? (
+                <div className="flex flex-col gap-3 mt-4">
+                  <button 
+                    onClick={() => {
+                      setIsEditing(true);
+                      setSuccessMessage(null);
+                    }}
+                    className="w-full py-3.5 font-bold rounded-xl transition-colors border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                  >
+                    Modify Reservation
+                  </button>
+                  <button 
+                    onClick={() => setIsCancelModalOpen(true)}
+                    className="w-full py-3.5 bg-red-50 text-red-600 border border-red-100 font-bold rounded-xl hover:bg-red-100 transition-colors"
+                  >
+                    Cancel Reservation
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-4 p-4 bg-gray-50 border border-gray-200 text-gray-500 rounded-xl text-center text-sm font-medium">
+                  This reservation has already passed and can no longer be modified or canceled online.
+                </div>
+              )}
             </>
           ) : (
             /* --- EDIT MODE --- */
