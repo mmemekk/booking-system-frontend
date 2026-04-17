@@ -22,6 +22,7 @@ export default function ManageBookingPage() {
   const bookingRef = params.ref as string;
 
   const [booking, setBooking] = useState<any>(null);
+  const [restaurantName, setRestaurantName] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,13 +43,25 @@ export default function ManageBookingPage() {
   const [availableTables, setAvailableTables] = useState<any[]>([]);
   const [isLoadingTables, setIsLoadingTables] = useState(false);
 
-  // 1. Fetch Initial Booking Details
+  // 1. Fetch Initial Booking & Restaurant Details
   useEffect(() => {
-    const fetchBooking = async () => {
+    const fetchInitialData = async () => {
       try {
-        const response = await fetch(`${baseUrl}/booking/${restaurantId}?bookingRef=${bookingRef}`);
-        if (response.ok) {
-          const data = await response.json();
+        // Fetch both the booking details and the restaurant details concurrently
+        const [bookingRes, restaurantRes] = await Promise.all([
+          fetch(`${baseUrl}/booking/${restaurantId}?bookingRef=${bookingRef}`),
+          fetch(`${baseUrl}/restaurant/${restaurantId}`)
+        ]);
+
+        if (restaurantRes.ok) {
+          const restData = await restaurantRes.json();
+          if (restData.restaurant?.name) {
+            setRestaurantName(restData.restaurant.name);
+          }
+        }
+
+        if (bookingRes.ok) {
+          const data = await bookingRes.json();
           const foundBooking = data.formattedBooking?.[0]; // Get the specific booking
           
           if (foundBooking) {
@@ -66,14 +79,14 @@ export default function ManageBookingPage() {
           setError("Booking not found or invalid link.");
         }
       } catch (err) {
-        console.error("Error fetching booking:", err);
+        console.error("Error fetching data:", err);
         setError("Unable to connect. Please try again later.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (bookingRef) fetchBooking();
+    if (bookingRef) fetchInitialData();
   }, [bookingRef]);
 
   // 2. Fetch Availability when Date Changes in Edit Mode
@@ -259,7 +272,7 @@ export default function ManageBookingPage() {
   }
 
   // CANCELED STATE
-  if (booking.status === "canceled") {
+  if (booking.status === "canceled" || booking.status === "noshow") {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center p-4 sm:p-6">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-lg overflow-hidden mt-8 border border-gray-100">
@@ -269,7 +282,7 @@ export default function ManageBookingPage() {
           </div>
           <div className="p-6 text-center flex flex-col gap-4">
             <p className="text-gray-600">
-              Hi {booking.customerName}, your reservation for <strong>{booking.bookingDate}</strong> has been successfully canceled.
+              Hi {booking.customerName}, your reservation on <strong>{booking.bookingDate}</strong> has been canceled.
             </p>
             <p className="text-sm text-gray-500">We hope to serve you another time!</p>
           </div>
@@ -316,6 +329,13 @@ export default function ManageBookingPage() {
         {/* Header */}
         <div className="bg-blue-600 p-8 text-center text-white flex flex-col items-center relative">
           <RestaurantOutlined sx={{ fontSize: 48 }} className="mb-3 opacity-90" />
+          
+          {restaurantName && (
+            <div className="text-blue-200 font-bold tracking-wider uppercase text-xs mb-1.5">
+              {restaurantName}
+            </div>
+          )}
+          
           <h1 className="text-2xl font-bold">Your Reservation</h1>
           <p className="text-blue-100 font-medium mt-1 opacity-90">Ref: {booking.bookingRef}</p>
         </div>
