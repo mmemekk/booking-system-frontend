@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import { useTopBar } from "../../component/topbarContext";
-import { useSlot } from "../../hooks/useSlot";
-import DateSelector from "../../component/dateSelector";
-import BookingModal, { BookingDetails } from "../../component/bookingModal";
-import AddBookingModal from "../../component/addBookingModal";
+import { useTopBar } from "../../../component/topbarContext";
+import { useSlot } from "../../../hooks/useSlot";
+import DateSelector from "../../../component/dateSelector";
+import BookingModal, { BookingDetails } from "../../../component/bookingModal";
+import AddBookingModal from "../../../component/addBookingModal";
 import { Add } from "@mui/icons-material";
-import { config } from "../../config";
+import { config } from "../../../config";
 
 const baseUrl = config.baseUrl;
 const restaurantId = config.restaurantId;

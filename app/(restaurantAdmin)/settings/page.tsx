@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTopBar } from "../../component/topbarContext";
-import { config } from "../../config";
+import { useTopBar } from "../../../component/topbarContext";
+import { config } from "../../../config";
 
 const baseUrl = config.baseUrl;
 const restaurantId = config.restaurantId;
@@ -22,16 +22,28 @@ export default function Settings() {
   });
 
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Loading states for individual buttons
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const [isSavingHours, setIsSavingHours] = useState(false);
-  
-  // Status states for inline notifications
-  const [detailsSaveStatus, setDetailsSaveStatus] = useState<"idle" | "success" | "error">("idle");
-  const [hoursSaveStatus, setHoursSaveStatus] = useState<"idle" | "success" | "error">("idle");
 
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  // Status states for inline notifications
+  const [detailsSaveStatus, setDetailsSaveStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
+  const [hoursSaveStatus, setHoursSaveStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle");
+
+  const days = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
 
   const [operatingHours, setOperatingHours] = useState(
     days.reduce((acc, day) => {
@@ -41,7 +53,7 @@ export default function Settings() {
         isOpen: day !== "Sunday",
       };
       return acc;
-    }, {} as any)
+    }, {} as any),
   );
 
   // Set Top Bar
@@ -58,7 +70,7 @@ export default function Settings() {
         // Fetch both Details and Hours concurrently
         const [resDetails, resHours] = await Promise.all([
           fetch(`${baseUrl}/restaurant/${restaurantId}`),
-          fetch(`${baseUrl}/restaurant/${restaurantId}/store-hour`)
+          fetch(`${baseUrl}/restaurant/${restaurantId}/store-hour`),
         ]);
 
         // 1. Process Restaurant Details
@@ -81,14 +93,15 @@ export default function Settings() {
         if (resHours.ok) {
           const hoursData = await resHours.json();
           const formattedHours = hoursData.formattedStoreHours || [];
-          
+
           if (formattedHours.length > 0) {
             setOperatingHours((prev: any) => {
               const updatedHours = { ...prev };
               formattedHours.forEach((h: any) => {
                 // Capitalize the day from the API (e.g. "monday" -> "Monday") to match our state keys
-                const capitalizedDay = h.dayOfWeek.charAt(0).toUpperCase() + h.dayOfWeek.slice(1);
-                
+                const capitalizedDay =
+                  h.dayOfWeek.charAt(0).toUpperCase() + h.dayOfWeek.slice(1);
+
                 if (updatedHours[capitalizedDay]) {
                   updatedHours[capitalizedDay] = {
                     open: h.openTime,
@@ -103,7 +116,6 @@ export default function Settings() {
         } else {
           console.error("Failed to fetch store hours");
         }
-
       } catch (error) {
         console.error("Error fetching initial settings data:", error);
       } finally {
@@ -117,7 +129,9 @@ export default function Settings() {
   // -----------------------------
   // HANDLERS
   // -----------------------------
-  const handleRestaurantChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleRestaurantChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
 
     // Restrict phone input to numbers only
@@ -130,9 +144,9 @@ export default function Settings() {
       return;
     }
 
-    setRestaurantDetails((prev) => ({ 
-      ...prev, 
-      [name]: name === "slotDuration" ? Number(value) : value 
+    setRestaurantDetails((prev) => ({
+      ...prev,
+      [name]: name === "slotDuration" ? Number(value) : value,
     }));
   };
 
@@ -180,31 +194,34 @@ export default function Settings() {
   const handleSaveHours = async () => {
     setIsSavingHours(true);
     setHoursSaveStatus("idle");
-    
+
     try {
       // Create an array of PATCH promises for all 7 days
       const updatePromises = days.map((day) => {
         const dayData = operatingHours[day];
         const lowerCaseDay = day.toLowerCase(); // Format required by the API
 
-        return fetch(`${baseUrl}/restaurant/${restaurantId}/store-hour/${lowerCaseDay}`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
+        return fetch(
+          `${baseUrl}/restaurant/${restaurantId}/store-hour/${lowerCaseDay}`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              openTime: dayData.open,
+              closeTime: dayData.close,
+              isClosed: !dayData.isOpen, // Convert UI 'isOpen' back to API 'isClosed'
+            }),
           },
-          body: JSON.stringify({
-            openTime: dayData.open,
-            closeTime: dayData.close,
-            isClosed: !dayData.isOpen, // Convert UI 'isOpen' back to API 'isClosed'
-          }),
-        });
+        );
       });
 
       // Wait for all 7 requests to finish concurrently
       const results = await Promise.all(updatePromises);
-      
+
       // Check if ALL requests were successful
-      const allSuccessful = results.every(res => res.ok);
+      const allSuccessful = results.every((res) => res.ok);
 
       if (allSuccessful) {
         setHoursSaveStatus("success");
@@ -216,11 +233,20 @@ export default function Settings() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            dayOfWeek: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
-            isUseStoreHour: true
+            dayOfWeek: [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday",
+            ],
+            isUseStoreHour: true,
           }),
-        }).catch(err => console.error("Error quietly syncing tables with store hours:", err));
-
+        }).catch((err) =>
+          console.error("Error quietly syncing tables with store hours:", err),
+        );
       } else {
         console.error("Some days failed to update properly.");
         setHoursSaveStatus("error");
@@ -244,7 +270,6 @@ export default function Settings() {
 
   return (
     <div className="flex flex-col p-8 gap-6">
-
       {/* =========================
           RESTAURANT DETAILS
       ========================== */}
@@ -259,7 +284,6 @@ export default function Settings() {
         </div>
 
         <div className="space-y-6 p-6">
-          
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -332,10 +356,10 @@ export default function Settings() {
               <option value={120}>120 minutes</option>
             </select>
             <p className="mt-1 text-xs text-gray-500">
-              Determines how your timeline grids and availability slots are divided.
+              Determines how your timeline grids and availability slots are
+              divided.
             </p>
           </div>
-
         </div>
 
         <div className="flex items-center justify-end gap-4 bg-gray-50 px-6 py-3 rounded-b-xl border-t border-gray-100">
@@ -353,7 +377,9 @@ export default function Settings() {
             onClick={handleSaveRestaurantDetails}
             disabled={isSavingDetails}
             className={`rounded-md px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors ${
-              isSavingDetails ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              isSavingDetails
+                ? "bg-blue-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
             {isSavingDetails ? "Saving..." : "Save Changes"}
@@ -376,8 +402,10 @@ export default function Settings() {
 
         <div className="divide-y divide-gray-100 p-6">
           {days.map((day) => (
-            <div key={day} className="grid grid-cols-4 items-center gap-4 py-4 first:pt-0 last:pb-0">
-
+            <div
+              key={day}
+              className="grid grid-cols-4 items-center gap-4 py-4 first:pt-0 last:pb-0"
+            >
               <span className="font-medium text-gray-800">{day}</span>
 
               <div className="col-span-2 flex items-center gap-3">
@@ -416,9 +444,10 @@ export default function Settings() {
                   <div className="absolute inset-0 bg-gray-300 rounded-full transition-colors peer-checked:bg-blue-600"></div>
                   <div className="absolute left-[3px] bottom-[3px] h-4 w-4 bg-white rounded-full transition-transform peer-checked:translate-x-[16px]"></div>
                 </label>
-                <span className="w-14 font-medium">{operatingHours[day].isOpen ? "Open" : "Closed"}</span>
+                <span className="w-14 font-medium">
+                  {operatingHours[day].isOpen ? "Open" : "Closed"}
+                </span>
               </div>
-
             </div>
           ))}
         </div>
@@ -438,14 +467,15 @@ export default function Settings() {
             onClick={handleSaveHours}
             disabled={isSavingHours}
             className={`rounded-md px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors ${
-              isSavingHours ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+              isSavingHours
+                ? "bg-blue-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
             }`}
           >
             {isSavingHours ? "Saving..." : "Save Hours"}
           </button>
         </div>
       </div>
-
     </div>
   );
 }

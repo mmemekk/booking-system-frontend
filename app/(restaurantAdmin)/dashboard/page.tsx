@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTopBar } from "../../component/topbarContext";
-import { useSlot } from "../../hooks/useSlot";
+import { useTopBar } from "../../../component/topbarContext";
+import { useSlot } from "../../../hooks/useSlot";
 import {
   PeopleAlt,
   TableRestaurantOutlined,
@@ -12,10 +12,10 @@ import {
   Star,
   Add,
 } from "@mui/icons-material";
-import BookingModal, { BookingDetails } from "../../component/bookingModal";
-import DateSelector from "../../component/dateSelector";
-import AddBookingModal from "../../component/addBookingModal";
-import { config } from "../../config";
+import BookingModal, { BookingDetails } from "../../../component/bookingModal";
+import DateSelector from "../../../component/dateSelector";
+import AddBookingModal from "../../../component/addBookingModal";
+import { config } from "../../../config";
 
 // Extended interface to handle the detail view and status
 interface Booking extends BookingDetails {

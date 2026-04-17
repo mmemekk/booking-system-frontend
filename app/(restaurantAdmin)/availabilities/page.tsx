@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState, useRef } from "react";
-import { useTopBar } from "../../component/topbarContext";
-import WeekSelector from "../../component/weekSelector";
-import { useSlot } from "../../hooks/useSlot";
+import { useTopBar } from "../../../component/topbarContext";
+import WeekSelector from "../../../component/weekSelector";
+import { useSlot } from "../../../hooks/useSlot";
 import { Close, TableRestaurantOutlined, PeopleAlt } from "@mui/icons-material";
-import { config } from "../../config";
+import { config } from "../../../config";
 
 const baseUrl = config.baseUrl;
 const restaurantId = config.restaurantId;

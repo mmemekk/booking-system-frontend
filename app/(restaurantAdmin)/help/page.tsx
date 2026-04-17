@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useTopBar } from "../../component/topbarContext";
+import { useTopBar } from "../../../component/topbarContext";
 import {
   HelpOutline,
   MenuBookOutlined,
@@ -30,7 +30,8 @@ export default function Help() {
           Help & Support Center
         </h1>
         <p className="mt-2 text-base text-gray-500">
-          Learn how to navigate your restaurant dashboard, manage live operations, and configure your system.
+          Learn how to navigate your restaurant dashboard, manage live
+          operations, and configure your system.
         </p>
       </div>
 
@@ -56,7 +57,9 @@ export default function Help() {
             <div>
               <h4 className="font-semibold text-gray-900">Dashboard</h4>
               <p className="text-sm text-gray-500 mt-1">
-                Your live operational hub. View real-time covers, table utilization grids, and pipeline attrition. Process incoming guests by marking them as seated, canceled, or no-shows.
+                Your live operational hub. View real-time covers, table
+                utilization grids, and pipeline attrition. Process incoming
+                guests by marking them as seated, canceled, or no-shows.
               </p>
             </div>
           </div>
@@ -68,7 +71,9 @@ export default function Help() {
             <div>
               <h4 className="font-semibold text-gray-900">Bookings Timeline</h4>
               <p className="text-sm text-gray-500 mt-1">
-                A visual timeline of your restaurant floor. See exactly which tables are occupied, spot gaps in service, and view blocked-off "Exception" periods per table.
+                A visual timeline of your restaurant floor. See exactly which
+                tables are occupied, spot gaps in service, and view blocked-off
+                "Exception" periods per table.
               </p>
             </div>
           </div>
@@ -80,7 +85,9 @@ export default function Help() {
             <div>
               <h4 className="font-semibold text-gray-900">Availabilities</h4>
               <p className="text-sm text-gray-500 mt-1">
-                A 7-day rolling window of your entire capacity. Quickly spot bottlenecks with color-coded slots showing exactly how many tables are left at any given minute.
+                A 7-day rolling window of your entire capacity. Quickly spot
+                bottlenecks with color-coded slots showing exactly how many
+                tables are left at any given minute.
               </p>
             </div>
           </div>
@@ -92,7 +99,9 @@ export default function Help() {
             <div>
               <h4 className="font-semibold text-gray-900">Settings</h4>
               <p className="text-sm text-gray-500 mt-1">
-                Configure your core mechanics. Update contact details, set your weekly operating hours, and define your standard time slot duration (e.g., 15 or 30 mins).
+                Configure your core mechanics. Update contact details, set your
+                weekly operating hours, and define your standard time slot
+                duration (e.g., 15 or 30 mins).
               </p>
             </div>
           </div>
@@ -119,7 +128,10 @@ export default function Help() {
               How do I create a walk-in or manual phone booking?
             </h4>
             <p className="text-sm text-gray-600">
-              Click the blue <strong>"Add Booking"</strong> button found in the top bar of your Dashboard or Bookings timeline. The system will automatically suggest tables that meet both the capacity requirement and the specific time availability.
+              Click the blue <strong>"Add Booking"</strong> button found in the
+              top bar of your Dashboard or Bookings timeline. The system will
+              automatically suggest tables that meet both the capacity
+              requirement and the specific time availability.
             </p>
           </div>
 
@@ -128,16 +140,24 @@ export default function Help() {
               How do I mark a guest as arrived, canceled, or a no-show?
             </h4>
             <p className="text-sm text-gray-600">
-              On the Dashboard, locate the guest's card under "Upcoming Bookings." Click the green checkmark to seat them. To cancel or mark as a no-show, click the red 'X' to reveal the secondary action menu. If you make a mistake, you can use the "Revert" button in the Past Bookings list.
+              On the Dashboard, locate the guest's card under "Upcoming
+              Bookings." Click the green checkmark to seat them. To cancel or
+              mark as a no-show, click the red 'X' to reveal the secondary
+              action menu. If you make a mistake, you can use the "Revert"
+              button in the Past Bookings list.
             </p>
           </div>
 
           <div className="pt-5 pb-5">
             <h4 className="font-semibold text-gray-900 text-sm mb-1">
-              What do the fractions (e.g., "3/4") mean on the Availabilities grid?
+              What do the fractions (e.g., "3/4") mean on the Availabilities
+              grid?
             </h4>
             <p className="text-sm text-gray-600">
-              This represents your remaining capacity. The first number is how many tables are completely free to be booked for that specific 30-minute block. The second number is your absolute total table count. If it turns orange, you are nearing maximum capacity!
+              This represents your remaining capacity. The first number is how
+              many tables are completely free to be booked for that specific
+              30-minute block. The second number is your absolute total table
+              count. If it turns orange, you are nearing maximum capacity!
             </p>
           </div>
 
@@ -146,12 +166,14 @@ export default function Help() {
               Why can't I see certain times on the timeline grid?
             </h4>
             <p className="text-sm text-gray-600">
-              The grid scales dynamically based on the Operating Hours you set in the <strong>Settings</strong> tab. If a time is missing, ensure your Open and Close times are configured correctly for that specific day of the week.
+              The grid scales dynamically based on the Operating Hours you set
+              in the <strong>Settings</strong> tab. If a time is missing, ensure
+              your Open and Close times are configured correctly for that
+              specific day of the week.
             </p>
           </div>
         </div>
       </div>
-
     </div>
   );
 }
