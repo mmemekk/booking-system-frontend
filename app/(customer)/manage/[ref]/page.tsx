@@ -392,19 +392,19 @@ export default function ManageBookingPage() {
             /* --- EDIT MODE --- */
             <form onSubmit={handleSaveChanges} className="flex flex-col gap-5 animate-in fade-in duration-300">
               
-              {/* Wrapped in a flex box to prevent overflow on iOS Safari */}
-              <div className="flex gap-3">
-                <div className="flex-1 min-w-0">
+              {/* Stacked on mobile, side-by-side on larger screens */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
                   <label className="block text-xs font-bold text-gray-500 mb-1.5">Date</label>
                   <input
                     type="date"
                     required
                     value={editData.bookingDate}
                     onChange={(e) => setEditData({ ...editData, bookingDate: e.target.value })}
-                    className="w-full h-12 px-2 sm:px-3 rounded-xl border border-gray-300 text-sm sm:text-base bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                    className="w-full h-12 px-3 rounded-xl border border-gray-300 text-base bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   />
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1">
                   <label className="block text-xs font-bold text-gray-500 mb-1.5">Time</label>
                   <input
                     type="time"
@@ -413,7 +413,7 @@ export default function ManageBookingPage() {
                     value={editData.startTime}
                     onChange={(e) => setEditData({ ...editData, startTime: e.target.value })}
                     onBlur={handleTimeBlur}
-                    className="w-full h-12 px-2 sm:px-3 rounded-xl border border-gray-300 text-sm sm:text-base bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                    className="w-full h-12 px-3 rounded-xl border border-gray-300 text-base bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                   />
                 </div>
               </div>
