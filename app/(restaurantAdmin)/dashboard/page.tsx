@@ -59,6 +59,9 @@ export default function Dashboard() {
     percentage: 0,
   });
 
+  // State to store table mapping (ID -> Name)
+  const [tableMap, setTableMap] = useState<Record<string, string>>({});
+
   // Top bar configuration
   useEffect(() => {
     setTopBar(
@@ -119,7 +122,7 @@ export default function Dashboard() {
             bookingDate: b.bookingDate,
             startTime: b.startTime,
             capacity: b.capacity,
-            tableName: b.tableId,
+            tableName: b.tableId, // Keep tableId for lookup
             specialRequest: b.specialRequest,
             status: b.status,
           }),
@@ -220,6 +223,33 @@ export default function Dashboard() {
     fetchUtilization();
     // Add refreshTrigger to dependencies
   }, [currentDate, refreshTrigger]);
+
+  // Fetch Tables for Name Mapping
+  useEffect(() => {
+    const fetchTables = async () => {
+      try {
+        const response = await fetch(
+          `${baseUrl}/restaurant/${restaurantId}/table`,
+        );
+        if (response.ok) {
+          const data = await response.json();
+          const tables = data?.getTable || [];
+
+          // Create a mapping of tableId -> tableName
+          const map: Record<string, string> = {};
+          tables.forEach((table: any) => {
+            map[String(table.id)] = table.name || `Table ${table.id}`;
+          });
+
+          setTableMap(map);
+        }
+      } catch (error) {
+        console.error("Error fetching tables:", error);
+      }
+    };
+
+    fetchTables();
+  }, []);
 
   const handleCardClick = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -383,7 +413,10 @@ export default function Dashboard() {
             <TableRestaurantOutlined
               sx={{ fontSize: 18, color: "var(--color-grey-text)" }}
             />
-            <span>Table {booking.tableName}</span>
+            <span>
+              {tableMap[String(booking.tableName)] ||
+                `Table ${booking.tableName}`}
+            </span>
           </div>
         </div>
       </div>
