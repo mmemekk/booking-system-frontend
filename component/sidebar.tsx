@@ -1,9 +1,16 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useState, useEffect } from "react"
-import { Utensils, LayoutDashboard, CalendarDays, CalendarCheck, Settings, HelpCircle } from "lucide-react"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import {
+  Utensils,
+  LayoutDashboard,
+  CalendarDays,
+  CalendarCheck,
+  Settings,
+  HelpCircle,
+} from "lucide-react";
 import { TableRestaurantOutlined } from "@mui/icons-material";
 import { config } from "../config";
 
@@ -11,8 +18,8 @@ const baseUrl = config.baseUrl;
 const restaurantId = config.restaurantId;
 
 export default function Sidebar() {
-  const pathname = usePathname()
-  
+  const pathname = usePathname();
+
   // State to hold the dynamic restaurant name
   const [restaurantName, setRestaurantName] = useState();
 
@@ -55,7 +62,7 @@ export default function Sidebar() {
       href: "/tables",
       icon: TableRestaurantOutlined,
     },
-  ]
+  ];
 
   const bottomItems = [
     {
@@ -68,14 +75,12 @@ export default function Sidebar() {
       href: "/help",
       icon: HelpCircle,
     },
-  ]
+  ];
 
   return (
     <aside className="fixed flex flex-col left-0 w-64 h-screen border-r border-border bg-white justify-between p-4 z-10">
-      
       {/* TOP SECTION */}
       <div>
-
         {/* Logo */}
         <div className="flex items-center gap-3 mb-8 px-2">
           <div className="w-10 h-10 shrink-0 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-sm">
@@ -83,7 +88,10 @@ export default function Sidebar() {
           </div>
 
           <div className="flex flex-col justify-center overflow-hidden">
-            <p className="font-bold text-gray-900 truncate" title={restaurantName}>
+            <p
+              className="font-bold text-gray-900 truncate"
+              title={restaurantName}
+            >
               {restaurantName}
             </p>
             <p className="text-xs font-medium text-gray-500  tracking-wider truncate">
@@ -95,8 +103,8 @@ export default function Sidebar() {
         {/* Main Navigation */}
         <nav className="flex flex-col gap-2">
           {navItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
 
             return (
               <Link
@@ -114,18 +122,17 @@ export default function Sidebar() {
                 <Icon size={20} />
                 {item.name}
               </Link>
-            )
+            );
           })}
         </nav>
-
       </div>
 
       {/* BOTTOM SECTION */}
       <div className="flex flex-col gap-2">
         <div className="w-full h-px bg-gray-100 mb-2" />
         {bottomItems.map((item) => {
-          const Icon = item.icon
-          const isActive = pathname === item.href
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
 
           return (
             <Link
@@ -142,10 +149,9 @@ export default function Sidebar() {
               <Icon size={20} />
               {item.name}
             </Link>
-          )
+          );
         })}
       </div>
-
     </aside>
-  )
+  );
 }
